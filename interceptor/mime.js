@@ -82,8 +82,19 @@
 
 				config.registry.lookup(mime).otherwise(function () { return plainText; }).then(function (serializer) {
 					var client = config.client || response.request && response.request.originator;
-					response.entity = serializer.read(response.entity, { client: client, response: response });
-					responseReady.resolve(response);
+					var entity = serializer.read(response.entity, function (error, result) {
+						if (error) {
+							response.error = error;
+						} else {
+							response.entity = result;
+						}
+						response.entity = serializer.read(response.entity, { client: client, response: response });
+						responseReady.resolve(response);
+					});
+					if (entity !== undefined) {
+						response.entity = serializer.read(response.entity, { client: client, response: response });
+						responseReady.resolve(response);
+					}
 				});
 
 				return responseReady.promise;
